@@ -311,3 +311,275 @@ function Avatar({ person, size }) {
   // person and size are available here
 }
 ```
+
+### Default values
+
+You can give a prop a default value by using the assignment operator `=` inside the curly braces. For example, to give `size` a default value of `100`, you can write:
+
+```jsx
+function Avatar({ person, size = 100 }) {
+  // size will be 100 if not provided
+}
+```
+
+### Forwarding props
+
+Sometimes passing props gets very repetitive. For example, if you want to pass many props from `Profile` to `Avatar`, you might end up writing something like this:
+
+```jsx
+function Profile({ person, size, isSepia, thickBorder }) {
+  return (
+    <div className="card">
+      <Avatar
+        person={person}
+        size={size}
+        isSepia={isSepia}
+        thickBorder={thickBorder}
+      />
+    </div>
+  );
+}
+```
+
+To avoid this repetition, you can use the spread operator `...` to forward all props from `Profile` to `Avatar`:
+
+```jsx
+function Profile(props) {
+  return (
+    <div className="card">
+      <Avatar {...props} />
+    </div>
+  );
+}
+```
+
+This forwards all of `Profile`’s props to the `Avatar` without listing each of their names.
+
+> [!WARNING]
+> Use **spread syntax with restraint**. If you’re using it in every other component, something is wrong. Often, it indicates that you should split your components and pass children as JSX. More on that next!
+
+### Passing JSX as children
+
+It is common to nest built-in browser tags:
+
+```jsx
+<div>
+  <img />
+</div>
+```
+
+Sometimes you’ll want to nest your own components the same way:
+
+```jsx
+<Card>
+  <Avatar />
+</Card>
+```
+
+When you nest content inside a JSX tag, the parent component will receive that content in a prop called `children`. For example, the `Card` component below will receive a `children` prop set to `<Avatar />` and render it in a wrapper div:
+
+```jsx
+import Avatar from "./Avatar.js";
+
+function Card({ children }) {
+  return <div className="card">{children}</div>;
+}
+
+export default function Profile() {
+  return (
+    <Card>
+      <Avatar
+        size={100}
+        person={{
+          name: "Katsuko Saruhashi",
+          imageId: "YfeOqp2",
+        }}
+      />
+    </Card>
+  );
+}
+```
+
+In this example:
+
+- The `Profile` component nests an `Avatar` component inside a `Card` component.
+- The `Card` component receives the nested `Avatar` as its `children` prop and renders it inside a `<div>` with the class name "card".
+- This pattern allows you to create flexible and reusable components that can wrap other components or elements.
+
+You will see this flexible pattern often in React applications!
+
+You can think of a component with a `children` prop as having a “hole” that can be “filled in” by its parent components with arbitrary JSX. You will often use the `children` prop for visual wrappers: panels, grids, etc.
+
+![How children components work](img/react-children-diagram.png)
+
+### How props change over time
+
+Props are read-only. A component must never change its own props, but it can pass different props to its child components over time.
+For example, a clock component might receive the current time and its color as props from its parent component, and re-render itself whenever those props change:
+
+```jsx
+// This is the important part for this example
+export default function Clock({ color, time }) {
+  return <h1 style={{ color: color }}>{time}</h1>;
+}
+
+export function App() {
+  const [time, setTime] = React.useState(new Date().toLocaleTimeString()); // This is advanced for now
+
+  React.useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTime(new Date().toLocaleTimeString());
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return <Clock color="blue" time={time} />;
+}
+```
+
+**Don’t try to “change props”**. When you need to respond to the user input (like changing the selected color), you will need to “set state”, which you can learn about in [State: A Component’s Memory](https://react.dev/learn/state-a-components-memory).
+
+### Recap
+
+- Props are inputs to React components, passed from parent to child.
+- To pass props, add them to the JSX, just like you would with HTML attributes.
+- To read props, use the `function Avatar({ person, size })` destructuring syntax.
+- You can specify a default value like `size = 100`, which is used for missing and `undefined` props.
+- You can forward all props with `<Avatar {...props} />` JSX spread syntax, but don’t overuse it!
+- Nested JSX like `<Card><Avatar /></Card>` will appear as `Card` component’s `children` prop.
+- Props are read-only snapshots in time: every render receives a new version of props.
+- You can’t change props. When you need interactivity, you’ll need to set state.
+
+## Managing state
+
+State is a way for React components to remember information and respond to user input over time. Unlike props, which are passed from parent to child and are read-only, state is managed within the component itself and can be changed.
+
+React is declarative, instead of explaining how to change the UI, you declare what the UI should look like for any given state. When the state changes, React automatically updates the UI to match the new state.
+
+![Imperative programming with JavaScript](img/imperative-programming-js.png)
+
+vs
+
+![Declarative programming with React](img/declarative-programming-react.png)
+
+### Thinking about UI declaratively
+
+To better understand how to think in React, you’ll walk through reimplementing this UI in React below:
+
+1. **Identify** your component’s different visual states
+1. **Determine** what triggers those state changes
+1. **Represent** the state in memory using `useState`
+1. **Remove** any non-essential state variables
+1. **Connect** the event handlers to set the state
+
+#### Step 1: Identify your component’s different visual states
+
+In computer science, you may hear about a [“state machine”](https://en.wikipedia.org/wiki/Finite-state_machine) being in one of several “states”. If you work with a designer, you may have seen mockups for different “visual states”. React stands at the intersection of design and computer science, so both of these ideas are sources of inspiration.
+
+First, you need to visualize all the different “states” of the UI the user might see:
+
+- **Empty**: Form has a disabled “Submit” button.
+- **Typing**: Form has an enabled “Submit” button.
+- **Submitting**: Form is completely disabled. Spinner is shown.
+- **Success**: “Thank you” message is shown instead of a form.
+- **Error**: Same as Typing state, but with an extra error message.
+
+###### Displaying many visual states at once
+
+If a component has a lot of visual states, it can be convenient to show them all on one page:
+
+```jsx
+// App.js
+import Form from "./Form.js";
+
+let statuses = ["empty", "typing", "submitting", "success", "error"];
+
+export default function App() {
+  return (
+    <>
+      {statuses.map((status) => (
+        <section key={status}>
+          <h4>Form ({status}):</h4>
+          <Form status={status} />
+        </section>
+      ))}
+    </>
+  );
+}
+```
+
+```jsx
+// Form.js
+export default function Form({ status }) {
+  if (status === "success") {
+    return <h1>That's right!</h1>;
+  }
+  return (
+    <form>
+      <textarea disabled={status === "submitting"} />
+      <br />
+      <button disabled={status === "empty" || status === "submitting"}>
+        Submit
+      </button>
+      {status === "error" && (
+        <p className="Error">Good guess but a wrong answer. Try again!</p>
+      )}
+    </form>
+  );
+}
+```
+
+#### Step 2: Determine what triggers those state changes
+
+You can trigger state updates in response to two kinds of inputs:
+
+- **Human inputs**, like clicking a button, typing in a field, navigating a link.
+- **Computer inputs**, like a network response arriving, a timeout completing, an image loading.
+
+![Human inputs](img/human-input.png)
+
+![Computer inputs](img/computer-inputs.png)
+
+In both cases, **you must set [state variables](https://react.dev/learn/state-a-components-memory#anatomy-of-usestate) to update the UI**. For the form you’re developing, you will need to change state in response to a few different inputs:
+
+- **Changing the text input** (human) should switch it from the _Empty_ state to the _Typing_ state or back, depending on whether the text box is empty or not.
+- **Clicking the Submit button** (human) should switch it to the _Submitting_ state.
+- **Successful network response** (computer) should switch it to the _Success_ state.
+- **Failed network response** (computer) should switch it to the _Error_ state with the matching error message.
+
+> [!NOTE]
+> Notice that human inputs often require [event handlers](https://react.dev/learn/responding-to-events)!
+
+![Form states in user flow](img/form-states-user-flow.png)
+
+#### Step 3: Represent the state in memory with useState
+
+Next you’ll need to represent the visual states of your component in memory with `[useState](https://react.dev/reference/react/useState)`. Simplicity is key: each piece of state is a “moving piece”, and **you want as few “moving pieces” as possible**. More complexity leads to more bugs!
+
+Start with the state that _absolutely must_ be there. For example, you’ll need to store the `answer` for the input, and the `error` (if it exists) to store the last error:
+
+```jsx
+const [answer, setAnswer] = useState("");
+const [error, setError] = useState(null);
+```
+
+If you struggle to think of the best way immediately, start by adding enough state that you’re definitely sure that all the possible visual states are covered:
+
+```jsx
+const [isEmpty, setIsEmpty] = useState(true);
+const [isTyping, setIsTyping] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [isSuccess, setIsSuccess] = useState(false);
+const [isError, setIsError] = useState(false);
+```
+
+Your first idea likely won’t be the best, but that’s ok—refactoring state is a part of the process!
+
+#### Step 4: Remove any non-essential state variables
+
+With your initial state in place, you can now look for ways to simplify it. For example, you can derive some state variables from others. In the example above, `isEmpty` and `isTyping` can be derived from `answer`, and `isError` can be derived from `error`. This means you can remove those state variables entirely:
+
+Here are some questions you can ask about your state variables:
+
+- **Does this state create a paradox?** For example, `isTyping` and `isSubmitting` can't both be `true` at the same time. A paradox often indicates that you can simplify your state. There are four possible combinations of two booleans, but only three correspond to valid states. To remove the “impossible” state, you can combine these into a `status` that must be one of three values: `'typing'`, `'submitting'`, or `'success'`.
+- **Is that same informatio**

@@ -1,5 +1,42 @@
 # React
 
+- [React](#react)
+  - [React components](#react-components)
+    - [Step 1: Export the component](#step-1-export-the-component)
+    - [Step 2: Define the function](#step-2-define-the-function)
+    - [Step 3: Add markup](#step-3-add-markup)
+    - [Using a component](#using-a-component)
+    - [What the browser sees](#what-the-browser-sees)
+    - [Nesting and organising components](#nesting-and-organising-components)
+  - [Importing and exporting components](#importing-and-exporting-components)
+    - [Default vs named exports](#default-vs-named-exports)
+    - [Mixing default and named exports](#mixing-default-and-named-exports)
+  - [Recap](#recap)
+  - [The Rules of JSX](#the-rules-of-jsx)
+    - [1. Return a single root element](#1-return-a-single-root-element)
+    - [2. Close all the tags](#2-close-all-the-tags)
+    - [3. camelCase ~~all~~ most of the things!](#3-camelcase-all-most-of-the-things)
+    - [Pro-tips](#pro-tips)
+    - [](#)
+  - [Props](#props)
+    - [Familiar props](#familiar-props)
+    - [Step 1: Pass props to the child component](#step-1-pass-props-to-the-child-component)
+    - [Step 2: Read props inside the child component](#step-2-read-props-inside-the-child-component)
+    - [Default values](#default-values)
+    - [Forwarding props](#forwarding-props)
+    - [Passing JSX as children](#passing-jsx-as-children)
+    - [How props change over time](#how-props-change-over-time)
+    - [Recap](#recap-1)
+  - [Managing state](#managing-state)
+    - [Thinking about UI declaratively](#thinking-about-ui-declaratively)
+      - [Step 1: Identify your component’s different visual states](#step-1-identify-your-components-different-visual-states)
+        - [Displaying many visual states at once](#displaying-many-visual-states-at-once)
+      - [Step 2: Determine what triggers those state changes](#step-2-determine-what-triggers-those-state-changes)
+      - [Step 3: Represent the state in memory with useState](#step-3-represent-the-state-in-memory-with-usestate)
+      - [Step 4: Remove any non-essential state variables](#step-4-remove-any-non-essential-state-variables)
+      - [Step 5: Connect the event handlers to set state](#step-5-connect-the-event-handlers-to-set-state)
+    - [Recap](#recap-2)
+
 ## React components
 
 A component in React is a reusable piece of code that represents a part of the user interface. Components can be thought of as custom HTML elements that you can create and use in your React applications.
@@ -259,6 +296,8 @@ This is why, in React, many HTML and SVG attributes are written in camelCase. Fo
 
 - Use a JSX [Converter tool](https://transform.tools/html-to-jsx) to help you convert HTML code snippets into JSX format quickly.
 
+###
+
 ## Props
 
 React components can accept inputs called "props" (short for properties) and manage internal data using "state". Props are passed to components (children) from their parent, while state is managed within the component itself.
@@ -484,7 +523,7 @@ First, you need to visualize all the different “states” of the UI the user m
 - **Success**: “Thank you” message is shown instead of a form.
 - **Error**: Same as Typing state, but with an extra error message.
 
-###### Displaying many visual states at once
+##### Displaying many visual states at once
 
 If a component has a lot of visual states, it can be convenient to show them all on one page:
 
@@ -582,4 +621,93 @@ With your initial state in place, you can now look for ways to simplify it. For 
 Here are some questions you can ask about your state variables:
 
 - **Does this state create a paradox?** For example, `isTyping` and `isSubmitting` can't both be `true` at the same time. A paradox often indicates that you can simplify your state. There are four possible combinations of two booleans, but only three correspond to valid states. To remove the “impossible” state, you can combine these into a `status` that must be one of three values: `'typing'`, `'submitting'`, or `'success'`.
-- **Is that same informatio**
+- **Is the same information available in another state variable already?** Another paradox: `isEmpty` and `isTyping` can’t be `true` at the same time. By making them separate state variables, you risk them going out of sync and causing bugs. Fortunately, you can remove `isEmpty` and instead check `answer.length === 0.`
+- **Can you get the same information from the inverse of another state variable?** `isError` is not needed because you can check `error !== null` instead.
+
+After this clean-up, you’re left with 3 (down from 7!) essential state variables:
+
+```jsx
+const [answer, setAnswer] = useState("");
+const [error, setError] = useState(null);
+const [status, setStatus] = useState("typing"); // 'typing', 'submitting', or 'success'
+```
+
+#### Step 5: Connect the event handlers to set state
+
+Lastly, create event handlers that update the state. Below is the final form, with all event handlers wired up:
+
+```jsx
+import { useState } from "react";
+
+export default function Form() {
+  const [answer, setAnswer] = useState("");
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState("typing");
+
+  if (status === "success") {
+    return <h1>That's right!</h1>;
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus("submitting");
+    try {
+      await submitForm(answer);
+      setStatus("success");
+    } catch (err) {
+      setStatus("typing");
+      setError(err);
+    }
+  }
+
+  function handleTextareaChange(e) {
+    setAnswer(e.target.value);
+  }
+
+  return (
+    <>
+      <h2>City quiz</h2>
+      <p>
+        In which city is there a billboard that turns air into drinkable water?
+      </p>
+      <form onSubmit={handleSubmit}>
+        <textarea
+          value={answer}
+          onChange={handleTextareaChange}
+          disabled={status === "submitting"}
+        />
+        <br />
+        <button disabled={answer.length === 0 || status === "submitting"}>
+          Submit
+        </button>
+        {error !== null && <p className="Error">{error.message}</p>}
+      </form>
+    </>
+  );
+}
+
+function submitForm(answer) {
+  // Pretend it's hitting the network.
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      let shouldError = answer.toLowerCase() !== "lima";
+      if (shouldError) {
+        reject(new Error("Good guess but a wrong answer. Try again!"));
+      } else {
+        resolve();
+      }
+    }, 1500);
+  });
+}
+```
+
+### Recap
+
+- State is a way for React components to remember information and respond to user input over time.
+- Declarative programming means describing the UI for each visual state rather than micromanaging the UI (imperative).
+- When developing a component:
+  1.  Identify all its visual states.
+  2.  Determine the human and computer triggers for state changes.
+  3.  Model the state with `useState`.
+  4.  Remove non-essential state to avoid bugs and paradoxes.
+  5.  Connect the event handlers to set state.

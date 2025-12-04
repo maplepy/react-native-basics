@@ -17,7 +17,9 @@
     - [2. Close all the tags](#2-close-all-the-tags)
     - [3. camelCase ~~all~~ most of the things!](#3-camelcase-all-most-of-the-things)
     - [Pro-tips](#pro-tips)
-    - [](#)
+    - [JavaScript in JSX with curly braces](#javascript-in-jsx-with-curly-braces)
+      - [Using double curlies](#using-double-curlies)
+      - [Recap](#recap-1)
   - [Props](#props)
     - [Familiar props](#familiar-props)
     - [Step 1: Pass props to the child component](#step-1-pass-props-to-the-child-component)
@@ -26,7 +28,7 @@
     - [Forwarding props](#forwarding-props)
     - [Passing JSX as children](#passing-jsx-as-children)
     - [How props change over time](#how-props-change-over-time)
-    - [Recap](#recap-1)
+    - [Recap](#recap-2)
   - [Managing state](#managing-state)
     - [Thinking about UI declaratively](#thinking-about-ui-declaratively)
       - [Step 1: Identify your component’s different visual states](#step-1-identify-your-components-different-visual-states)
@@ -35,7 +37,7 @@
       - [Step 3: Represent the state in memory with useState](#step-3-represent-the-state-in-memory-with-usestate)
       - [Step 4: Remove any non-essential state variables](#step-4-remove-any-non-essential-state-variables)
       - [Step 5: Connect the event handlers to set state](#step-5-connect-the-event-handlers-to-set-state)
-    - [Recap](#recap-2)
+    - [Recap](#recap-3)
 
 ## React components
 
@@ -296,7 +298,69 @@ This is why, in React, many HTML and SVG attributes are written in camelCase. Fo
 
 - Use a JSX [Converter tool](https://transform.tools/html-to-jsx) to help you convert HTML code snippets into JSX format quickly.
 
-###
+### JavaScript in JSX with curly braces
+
+You can embed any JavaScript expression in JSX by wrapping it in curly braces `{}`. This allows you to dynamically set attributes, render values, and include logic directly within your JSX markup.
+
+```jsx
+function Greeting({ name }) {
+  return <h1>Hello, {name}!</h1>;
+}
+```
+
+#### Using double curlies
+
+When you need to pass an object or an array as a prop, you can use double curly braces. The outer curly braces indicate that you're embedding a JavaScript expression, while the inner curly braces represent the object or array itself.
+
+```jsx
+function Box() {
+  const boxStyle = {
+    width: "100px",
+    height: "100px",
+    backgroundColor: "blue",
+  };
+
+  return <div style={boxStyle}></div>;
+}
+```
+
+```jsx
+const person = {
+  name: "Gregorio Y. Zara",
+  theme: {
+    backgroundColor: "violet",
+    color: "pink",
+  },
+};
+
+export default function TodoList() {
+  return (
+    <div style={person.theme}>
+      <h1>{person.name}'s Todos</h1>
+      <img
+        className="avatar"
+        src="https://i.imgur.com/7vQD0fPs.jpg"
+        alt="Gregorio Y. Zara"
+      />
+      <ul>
+        <li>Improve the videophone</li>
+        <li>Prepare aeronautics lectures</li>
+        <li>Work on the alcohol-fuelled engine</li>
+      </ul>
+    </div>
+  );
+}
+```
+
+> [!WARNING]
+> Inline `style` properties are written in camelCase. For example, HTML `<ul style="background-color: black">` would be written as `<ul style={{ backgroundColor: 'black' }}> ` in your component.
+
+#### Recap
+
+- JSX attributes inside quotes are passed as strings.
+- Curly braces let you bring JavaScript logic and variables into your markup.
+- They work inside the JSX tag content or immediately after `=` in attributes.
+- `{{` and `}}` is not special syntax: it’s a JavaScript object tucked inside JSX curly braces.
 
 ## Props
 

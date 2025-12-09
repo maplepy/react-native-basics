@@ -35,6 +35,12 @@
     - [Logical AND operator (\&\&)](#logical-and-operator-)
     - [Conditionally assigning JSX to a variable](#conditionally-assigning-jsx-to-a-variable)
     - [Recap](#recap-3)
+  - [Rendering Lists](#rendering-lists)
+    - [Rendering data from arrays](#rendering-data-from-arrays)
+    - [Filtering arrays](#filtering-arrays)
+    - [Keys - keeping list items in order](#keys---keeping-list-items-in-order)
+      - [Displaying several DOM nodes for each list item](#displaying-several-dom-nodes-for-each-list-item)
+    - [Recap](#recap-4)
   - [Managing state](#managing-state)
     - [Thinking about UI declaratively](#thinking-about-ui-declaratively)
       - [Step 1: Identify your component’s different visual states](#step-1-identify-your-components-different-visual-states)
@@ -655,6 +661,156 @@ export default function PackingList() {
 - In JSX, `{cond && <A />}` means "if `cond`, render `<A />`, otherwise nothing".
 - The shortcuts are common, but you don't have to use them if you prefer plain `if`.
 
+## Rendering Lists
+
+Often need to display multiple similar components from a collection of data. Use JavaScript array methods to manipulate data and render lists of components.
+
+### Rendering data from arrays
+
+Convert array data into JSX elements:
+
+1. **Store data in an array**:
+
+```jsx
+const people = [
+  "Creola Katherine Johnson: mathematician",
+  "Mario José Molina-Pasquel Henríquez: chemist",
+  "Mohammad Abdus Salam: physicist",
+];
+```
+
+2. **Use `map()` to transform into JSX**:
+
+```jsx
+const listItems = people.map((person) => <li>{person}</li>);
+```
+
+3. **Return wrapped in a container**:
+
+```jsx
+return <ul>{listItems}</ul>;
+```
+
+### Filtering arrays
+
+Use `filter()` to show only specific items:
+
+```jsx
+const people = [
+  { id: 0, name: "Creola Katherine Johnson", profession: "mathematician" },
+  { id: 1, name: "Mario José Molina-Pasquel Henríquez", profession: "chemist" },
+  { id: 2, name: "Mohammad Abdus Salam", profession: "physicist" },
+  { id: 3, name: "Percy Lavon Julian", profession: "chemist" },
+];
+
+const chemists = people.filter((person) => person.profession === "chemist");
+
+const listItems = chemists.map((person) => (
+  <li key={person.id}>
+    <b>{person.name}:</b> {person.profession}
+  </li>
+));
+
+return <ul>{listItems}</ul>;
+```
+
+> [!WARNING]
+>
+> **Arrow function return syntax:**
+>
+> ```jsx
+> // Implicit return - no curly braces needed
+> const listItems = chemists.map((person) => <li>...</li>);
+> ```
+>
+> ```jsx
+> // Explicit return - curly braces require 'return' keyword
+> const listItems = chemists.map((person) => {
+>   return <li>...</li>;
+> });
+> ```
+>
+> Arrow functions containing `=> {` have a ["block body"](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#function_body). They let you write more than a single line of code, but you **must** write a `return` statement yourself. If you forget it, nothing gets returned!
+
+### Keys - keeping list items in order
+
+JSX elements inside `map()` always need keys. Keys tell React which array item each component corresponds to.
+
+```jsx
+<li key={person.id}>
+  <b>{person.name}</b>
+</li>
+```
+
+**Where to get keys:**
+
+- **Database data**: Use database IDs (unique by nature)
+- **Locally generated data**: Use incrementing counter, `crypto.randomUUID()`, or packages like `uuid`
+
+**Rules of keys:**
+
+- **Must be unique among siblings** (but can be same in different arrays)
+- **Must not change** - don't generate them during rendering
+- **Don't use array index** as key - causes bugs when order changes
+- **Don't use `Math.random()`** - causes all components to recreate every render
+
+> [!NOTE]
+> Components don't receive `key` as a prop. It's only used internally by React. If your component needs the ID, pass it separately: `<Profile key={id} userId={id} />`.
+
+#### Displaying several DOM nodes for each list item
+
+When you need to render multiple elements per list item, you have two options:
+
+**1. Using a Fragment (`<>...</>`)**
+
+Wrap multiple elements without adding an extra `<div>`:
+
+```jsx
+const listItems = people.map((person) => (
+  <Fragment key={person.id}>
+    <h3>{person.name}</h3>
+    <p>{person.bio}</p>
+  </Fragment>
+));
+```
+
+Or use the shorthand `<>...</>` (but note: shorthand Fragments can't have keys, so use `<Fragment>` if you need a key):
+
+```jsx
+const listItems = people.map((person) => (
+  <>
+    <h3>{person.name}</h3>
+    <p>{person.bio}</p>
+  </>
+));
+```
+
+**2. Wrapping in a container element**
+
+Use `<div>`, `<section>`, or other elements:
+
+```jsx
+const listItems = people.map((person) => (
+  <div key={person.id}>
+    <img src={getImageUrl(person)} alt={person.name} />
+    <p>
+      <b>{person.name}</b>
+      {" " + person.profession}
+    </p>
+  </div>
+));
+```
+
+> [!NOTE]
+> You can place the `key` on either the wrapper element or the first child element in the group, but it's clearest to keep it on the wrapper.
+
+### Recap
+
+- Move data into arrays and objects
+- Generate sets of similar components with `map()`
+- Create filtered arrays with `filter()`
+- Set `key` on each component in a collection so React can track them even if position or data changes
+- Use `<Fragment>` or `<>` to group multiple elements without adding extra DOM nodes
 
 ## Managing state
 

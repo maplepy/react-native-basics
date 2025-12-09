@@ -745,7 +745,7 @@ JSX elements inside `map()` always need keys. Keys tell React which array item e
 **Where to get keys:**
 
 - **Database data**: Use database IDs (unique by nature)
-- **Locally generated data**: Use incrementing counter, `crypto.randomUUID()`, or packages like `uuid`
+- **Locally generated data**: Use incrementing counter (e.g. notes in a note-taking app), `crypto.randomUUID()`, or packages like `uuid` when creating new items
 
 **Rules of keys:**
 
@@ -809,7 +809,10 @@ const listItems = people.map((person) => (
 - Move data into arrays and objects
 - Generate sets of similar components with `map()`
 - Create filtered arrays with `filter()`
+- Use `key` props to help React track list items
+- Never change keys between renders or use array indexes as keys (causes bugs when order changes)
 - Set `key` on each component in a collection so React can track them even if position or data changes
+- Your component won't receive `key` as a prop, pass an ID separately if needed `<Profile key={id} userId={id} />`
 - Use `<Fragment>` or `<>` to group multiple elements without adding extra DOM nodes
 
 ## Managing state

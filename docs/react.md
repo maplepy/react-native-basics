@@ -29,6 +29,12 @@
     - [Passing JSX as children](#passing-jsx-as-children)
     - [How props change over time](#how-props-change-over-time)
     - [Recap](#recap-2)
+  - [Conditionally rendering components](#conditionally-rendering-components)
+    - [Conditionally returning nothing with null](#conditionally-returning-nothing-with-null)
+    - [Conditional (ternary) operator (`? :`)](#conditional-ternary-operator--)
+    - [Logical AND operator (\&\&)](#logical-and-operator-)
+    - [Conditionally assigning JSX to a variable](#conditionally-assigning-jsx-to-a-variable)
+    - [Recap](#recap-3)
   - [Managing state](#managing-state)
     - [Thinking about UI declaratively](#thinking-about-ui-declaratively)
       - [Step 1: Identify your component’s different visual states](#step-1-identify-your-components-different-visual-states)
@@ -37,7 +43,7 @@
       - [Step 3: Represent the state in memory with useState](#step-3-represent-the-state-in-memory-with-usestate)
       - [Step 4: Remove any non-essential state variables](#step-4-remove-any-non-essential-state-variables)
       - [Step 5: Connect the event handlers to set state](#step-5-connect-the-event-handlers-to-set-state)
-    - [Recap](#recap-3)
+    - [Recap](#recap-5)
 
 ## React components
 
@@ -552,6 +558,103 @@ export function App() {
 - Nested JSX like `<Card><Avatar /></Card>` will appear as `Card` component’s `children` prop.
 - Props are read-only snapshots in time: every render receives a new version of props.
 - You can’t change props. When you need interactivity, you’ll need to set state.
+
+## Conditionally rendering components
+
+Your components will often need to display different things depending on different conditions. In React, you can conditionally render JSX using JavaScript syntax like `if` statements, `&&,` and `? :` operators.
+
+### Conditionally returning nothing with null
+
+In some situations, you won’t want to render anything at all. For example, say you don’t want to show packed items at all. A component must return something. In this case, you can return null:
+
+```jsx
+if (isPacked) {
+  return null;
+}
+return <li className="item">{name}</li>;
+```
+
+When a component returns `null`, React will simply skip rendering that component and its children.
+
+In practice, returning `null` from a component isn’t common because it might surprise a developer trying to render it. More often, you would conditionally include or exclude the component in the parent component’s JSX. Here’s how to do that!
+
+### Conditional (ternary) operator (`? :`)
+
+JavaScript has a compact syntax for writing a [conditional expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_Operator) — the conditional operator or “ternary operator”.
+
+Instead of this:
+
+```jsx
+if (isPacked) {
+  return <li className="item">{name} ✅</li>;
+}
+return <li className="item">{name}</li>;
+```
+
+You can write this:
+
+```jsx
+return <li className="item">{isPacked ? name + " ✅" : name}</li>;
+```
+
+### Logical AND operator (&&)
+
+Another common shortcut you’ll encounter is the [JavaScript logical AND (`&&`) operator](<https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Logical_AND#:~:text=The%20logical%20AND%20(%20%26%26%20)%20operator,it%20returns%20a%20Boolean%20value.>). Inside React components, it often comes up when you want to render some JSX when the condition is true, or render nothing otherwise. With `&&,` you could conditionally render the checkmark only if `isPacked` is `true`:
+
+```jsx
+return (
+  <li className="item">
+    {name} {isPacked && "✅"}
+  </li>
+);
+```
+
+> [!WARNING]
+>
+> **Don't put numbers on the left side of `&&`**.
+>
+> To test the condition, JavaScript converts the left side to a boolean automatically. However, if the left side is `0`, then the whole expression gets that value (`0`), and React will happily render `0` rather than nothing.
+>
+> For example, a common mistake is to write code like `messageCount && <p>New messages</p>`. It's easy to assume that it renders nothing when `messageCount` is `0`, but it really renders the `0` itself!
+>
+> **To fix it**, make the left side a boolean: `messageCount > 0 && <p>New messages</p>`.
+
+### Conditionally assigning JSX to a variable
+
+When the shortcuts get in the way of writing plain code, try using an if statement and a variable. You can reassign variables defined with let, so start by providing the default content you want to display, the name:
+
+```jsx
+function Item({ name, isPacked }) {
+  let itemContent = name;
+  if (isPacked) {
+    itemContent = name + " ✅";
+  }
+  return <li className="item">{itemContent}</li>;
+}
+
+export default function PackingList() {
+  return (
+    <section>
+      <h1>Sally Ride's Packing List</h1>
+      <ul>
+        <Item isPacked={true} name="Space suit" />
+        <Item isPacked={true} name="Helmet with a golden leaf" />
+        <Item isPacked={false} name="Photo of Tam" />
+      </ul>
+    </section>
+  );
+}
+```
+
+### Recap
+
+- In React, you control branching logic with JavaScript.
+- You can return a JSX expression conditionally with an `if` statement.
+- You can conditionally save some JSX to a variable and then include it inside other JSX by using the curly braces.
+- In JSX, `{cond ? <A /> : <B />}` means "if `cond`, render `<A />`, otherwise `<B />`.
+- In JSX, `{cond && <A />}` means "if `cond`, render `<A />`, otherwise nothing".
+- The shortcuts are common, but you don't have to use them if you prefer plain `if`.
+
 
 ## Managing state
 
